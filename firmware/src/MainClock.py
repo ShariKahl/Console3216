@@ -1,90 +1,77 @@
+import threading
+import time
 
-TIME_BASIS_MS = 20
-
-MAIN_TIMER_PERIOD = 1250
+TIME_BASIS_MS = 20  # Zeitbasis in Millisekunden
+MAIN_TIMER_PERIOD = 1250  # Timer-Periode (nicht direkt benötigt in Python)
 
 class MainClockStatus_t:
-    def __init__(self) -> None:
-        # TODO Beide Variablen im C++ Struct auf nur ein Bit begrenzt
-        # C++:
-        # typedef struct{
-        # 	uint8_t systemTick:1;
-        # 	uint8_t systemTickOverflow:1;
-        # }MainClockStatus_t;
+    """Statusstruktur für den MainClock."""
+    def __init__(self):
         self.systemTick: int = 0
         self.systemTickOverflow: int = 0
 
 
 class MainClock:
-    __systemTime: int = 0
+    """Softwarebasierter Ersatz für den MainClock-Timer."""
+    __systemTime: int = 0  # Gesamtzeit in Ticks
 
-    def __init__(self) -> None:
-        self.__status: MainClockStatus_t = MainClockStatus_t()
-    
+    def __init__(self):
+        self.__status = MainClockStatus_t()
+        self.__timer = None
+        self.__running = False
+
     def startTimer(self):
-        # TODO C++ Quellcode:
-        # cli();
-        # Aus "Arduino.h", "avr/interrupt.h" oder "avr/io.h"
+        """Startet den Timer."""
+        self.__running = True
+        self.__schedule_next_tick()
 
-        global mainClock
-        mainClock = self
+    def stopTimer(self):
+        """Stoppt den Timer."""
+        self.__running = False
+        if self.__timer:
+            self.__timer.cancel()
 
-        # TODO C++ Quellcode:
-        # TCCR3A =   (1<<WGM31) | (0<<WGM30);
-        # TCCR3B = (1<<CS32) | (0<<CS31) | (0<<CS30)| ( 1<<WGM33 ) | (1<<WGM32 );
-        
-        # TCNT3H = 0;
-        # TCNT3L = 0;
+    def __schedule_next_tick(self):
+        """Plant den nächsten Tick ein."""
+        if self.__running:
+            self.__timer = threading.Timer(TIME_BASIS_MS / 1000.0, self.__tick)
+            self.__timer.start()
 
-        # ICR3 = MAIN_TIMER_PERIOD;
-
-        # TIMSK3 |= (1 << TOIE3);
-
-        # OCR3AH=0;
-        # OCR3AL=0;
-
-        # OCR3BH=0;
-        # OCR3BL=0;
-
-        # sei();
-        # Aus "Arduino.h", "avr/interrupt.h" oder "avr/io.h"
-
-        type(self).__systemTime = 0
-        pass
+    def __tick(self):
+        """Wird bei jedem Timer-Tick aufgerufen."""
+        self.setTick()
+        self.__schedule_next_tick()
 
     def setTick(self):
+        """Setzt den Tick-Status und erhöht die Systemzeit."""
         if self.__status.systemTick != 0:
             self.__status.systemTickOverflow = 1
-        
         self.__status.systemTick = 1
         type(self).__systemTime += 1
-        pass
+
     def isTick(self) -> bool:
+        """Prüft, ob ein Tick aktiv ist."""
         if self.__status.systemTick == 1:
             self.__status.systemTick = 0
             return True
-        
         return False
+
     def hasOverflow(self) -> bool:
+        """Prüft, ob ein Überlauf aufgetreten ist."""
         if self.__status.systemTickOverflow == 1:
             self.clearOverflow()
             return True
-        
         return False
+
     def clearOverflow(self):
+        """Löscht den Überlauf-Status."""
         self.__status.systemTickOverflow = 0
-        pass
 
     @classmethod
     def getSystemTime(cls) -> int:
+        """Gibt die Systemzeit in Millisekunden zurück."""
         return cls.__systemTime * TIME_BASIS_MS
 
-# TODO C++ Quellcode:
-# ISR(TIMER3_OVF_vect) 
-# {
-# 		mainClock->setTick();
-# }
 
-# TODO Im C++ Quellcode ein pointer:
-# MainClock * mainClock;
-mainClock: MainClock = MainClock()
+# Globale Instanz des MainClock
+mainClock = MainClock()

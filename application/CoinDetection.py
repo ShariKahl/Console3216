@@ -1,42 +1,96 @@
+import RPi.GPIO as GPIO
+import time
 from enum import Enum
 
-# TODO #include "Arduino.h"
 
 class CoinDetection:
-    # to check if a coin signal appear. - merke den zustand der letzten flanke
+    """
+    Klasse zur Erkennung von Münzeinwürfen.
+    """
+
+    # Flankenstatus
     coinToggle: bool = False
-    # to save the time how long the coin signal toggles
-    timer: int = 0
 
-    class coin(Enum):
-        cent5 = 0
-        cent10 = 1
-        cent20 = 2
-        cent0 = 3
+    # Zeitmesser
+    timer: float = 0.0
 
-    def __init__(self) -> None:
-        # TODO const volatile uint8_t pulse1 = 4;
-        # the flank nr for coin1 (coin 1 = 1 pulse = 2 flanks = 1x high + 1x low flank)
-        self._pulse1: int = 4
+    class Coin(Enum):
+        CENT5 = 0
+        CENT10 = 1
+        CENT20 = 2
+        UNKNOWN = 3
 
-        # TODO const volatile uint8_t pulse2 = 6;
-        # ... for coin 2
-        self._pulse2: int = 6
+    def __init__(self, coin_pin: int, led_pin: int):
+        """
+        Initialisiert die Münzerkennung und die zugehörigen GPIO-Pins.
+        :param coin_pin: GPIO-Pin für den Münzprüfer
+        :param led_pin: GPIO-Pin für die LED-Anzeige
+        """
+        self.coin_pin = coin_pin
+        self.led_pin = led_pin
 
-        # TODO const volatile uint8_t pulse3 = 8;
-        # ... place holder for future coins
-        self._pulse3: int = 8
+        self._pulse1 = 4
+        self._pulse2 = 6
+        self._pulse3 = 8
 
-        # count the number of flanks. 2 flanks = 1 pulse
-        self._flankenCounter: int = 0
+        self._flankenCounter = 0
 
-        # TODO C++: volatile uint8_t pinLED;
-        self.pinLED: int = 0
-        # TODO C++: volatile uint8_t pinCoinAcceptor
-        self.pinCoinAcceptor: int = 0
+        # GPIO-Initialisierung
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.coin_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(self.led_pin, GPIO.OUT)
+
+        # LED aus
+        GPIO.output(self.led_pin, GPIO.LOW)
 
     def cd_returnCoin(self):
-        pass
+        """
+        Gibt eine Münze zurück (LED als Signal).
+        """
+        print("Returning coin...")
+        GPIO.output(self.led_pin, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(self.led_pin, GPIO.LOW)
 
     def cd_coinDetection(self):
-        pass
+        """
+        Erkennung eines Münzeinwurfs basierend auf Signalflanken.
+        """
+        if GPIO.input(self.coin_pin) == GPIO.LOW and not self.coinToggle:
+            # Flanke erkannt
+            self.coinToggle = True
+            self._flankenCounter += 1
+            self.timer = time.time()
+            print(f"Flanke erkannt: {self._flankenCounter} Flanken gezählt.")
+        elif GPIO.input(self.coin_pin) == GPIO.HIGH and self.coinToggle:
+            # Rückkehr zur Ruheposition
+            self.coinToggle = False
+
+        # Zeitüberschreitung prüfen
+        if self.coinToggle and (time.time() - self.timer > 2):
+            print("Timeout: Kein vollständiger Münzimpuls erkannt.")
+            self._flankenCounter = 0
+
+        # Münzerkennung
+        if self._flankenCounter == self._pulse1:
+            print("5-Cent-Münze erkannt.")
+            self._flankenCounter = 0
+            return self.Coin.CENT5
+        elif self._flankenCounter == self._pulse2:
+            print("10-Cent-Münze erkannt.")
+            self._flankenCounter = 0
+            return self.Coin.CENT10
+        elif self._flankenCounter == self._pulse3:
+            print("20-Cent-Münze erkannt.")
+            self._flankenCounter = 0
+            return self.Coin.CENT20
+        else:
+            return self.Coin.UNKNOWN
+
+    def cleanup(self):
+        """
+        Bereinigt die GPIO-Konfiguration.
+        """
+        GPIO.cleanup(self.coin_pin)
+        GPIO.cleanup(self.led_pin)
+        print("GPIO cleaned up.")

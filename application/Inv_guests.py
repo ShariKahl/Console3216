@@ -1,31 +1,43 @@
 # #include "Arduino.h"
 # #include "sprite.h"
 import Sprite
-
-# TODO inv_guests.cpp does not exist, prototype from inc/inv_guests.h
-
+import Display
 
 class Guests(Sprite.Sprite):
-    def __init__(self):
-        self._vectorY: int = 0
+    def __init__(self, xPos: int = 0, yPos: int = 0, width: int = 1, height: int = 1):
+        super().__init__(xPos, yPos, width, height)
 
-        self._movementPrescaler: int = 0
+        self._vectorY: int = 1  # Bewegungsrichtung auf der Y-Achse (1 = nach unten, -1 = nach oben)
+        self._movementPrescaler: int = 0  # Steuert die Geschwindigkeit der Bewegung
         self._active: bool = False
 
+        # Beispiel-Bitmap für Gäste (Farben anpassen)
+        self._bitmap = [Display.Display.getColorFrom333(0, 5, 7) for _ in range(width * height)]
+
     def move(self):
-        pass
+        if not self._active:
+            return
+
+        # Bewegung in Y-Richtung basierend auf _vectorY
+        self._yPos += self._vectorY
+
+        # Grenzenprüfung: Wenn die Gäste den Bildschirm verlassen, deaktivieren
+        if self._yPos < 0 or self._yPos >= Display.Display.getHeight():
+            self.deActivate()
 
     def draw(self):
-        pass
+        if self._active:
+            super().draw()  # Verwendet die `draw`-Methode der `Sprite`-Klasse
 
     def activate(self):
-        pass
+        self._active = True
 
     def deActivate(self):
-        pass
+        self._active = False
 
     def setDirection(self, direction: bool):
-        pass
+        # Richtung setzen: True = nach unten, False = nach oben
+        self._vectorY = 1 if direction else -1
 
     def isActive(self) -> bool:
-        pass
+        return self._active

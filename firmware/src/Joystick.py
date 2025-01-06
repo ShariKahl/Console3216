@@ -1,178 +1,132 @@
-
 import RPi.GPIO as GPIO
 
-from Microcontroller import *
-
+# Konstanten für Joystick-Status
 JOYSTICK_STATUS_NOT_PRESSED = 0
 JOYSTICK_STATUS_PRESSED = 1
 JOYSTICK_STATUS_HOLD = 2
 
+# Joystick-Schalter
 JOYSTICK_SWITCH_LEFT = 0
-JOYSTICK_SWITCH_UP = (JOYSTICK_SWITCH_LEFT + 1 )
-JOYSTICK_SWITCH_RIGHT = (JOYSTICK_SWITCH_UP	 + 1 )
-JOYSTICK_SWITCH_DOWN = (JOYSTICK_SWITCH_RIGHT + 1 ) 
-JOYSTICK_SWITCH_BUTTON_TOP = (JOYSTICK_SWITCH_DOWN + 1 )
-JOYSTICK_SWITCH_BUTTON_BODY = (JOYSTICK_SWITCH_BUTTON_TOP + 1 )
+JOYSTICK_SWITCH_UP = 1
+JOYSTICK_SWITCH_RIGHT = 2
+JOYSTICK_SWITCH_DOWN = 3
+JOYSTICK_SWITCH_BUTTON_TOP = 4
+JOYSTICK_SWITCH_BUTTON_BODY = 5
 
-JOYSTICK_SWITCHES_COUNT = (JOYSTICK_SWITCH_BUTTON_BODY + 1)
+JOYSTICK_SWITCHES_COUNT = 6
 
 
 class JoystickPins_t:
-    def __init__(self) -> None:
-        self.left: int = 0
-        self.up: int = 0
-        self.right: int = 0
-        self.down: int = 0
-        self.buttonTop: int = 0
-        self.buttonBody: int = 0
+    """Struktur für Joystick-Pins."""
+    def __init__(self, left=0, up=0, right=0, down=0, buttonTop=0, buttonBody=0):
+        self.left = left
+        self.up = up
+        self.right = right
+        self.down = down
+        self.buttonTop = buttonTop
+        self.buttonBody = buttonBody
 
 
 class JoystickEdge_t:
-    def __init__(self) -> None:
-        # TODO In C++ Quellcode auf 2 Bits begrenzt
-        # typedef struct {
-        # 	uint16_t left:2;
-        # 	uint16_t up:2;
-        # 	uint16_t right:2;
-        # 	uint16_t down:2;
-        # 	uint16_t buttonTop:2;
-        # 	uint16_t buttonBody:2;
-        # } JoystickEdge_t;
-        self.left: int = 0
-        self.up: int = 0
-        self.right: int = 0
-        self.down: int = 0
-        self.buttonTop: int = 0
-        self.buttonBody: int = 0
+    """Struktur für Joystick-Kanten (Edge Detection)."""
+    def __init__(self):
+        self.left = JOYSTICK_STATUS_NOT_PRESSED
+        self.up = JOYSTICK_STATUS_NOT_PRESSED
+        self.right = JOYSTICK_STATUS_NOT_PRESSED
+        self.down = JOYSTICK_STATUS_NOT_PRESSED
+        self.buttonTop = JOYSTICK_STATUS_NOT_PRESSED
+        self.buttonBody = JOYSTICK_STATUS_NOT_PRESSED
 
 
 class Joystick:
-    def __init__(self) -> None:
-        self.__pins: JoystickPins_t = JoystickPins_t()
-        self.__edges: JoystickEdge_t = JoystickPins_t()
+    """Klasse zur Steuerung eines Joysticks über GPIO."""
+    def __init__(self):
+        self.__pins = JoystickPins_t()
+        self.__edges = JoystickEdge_t()
 
-        self.__value: int = 0
-    
-    # TODO Parameter pins ein Pointer
-    # C++:
-    # void init(JoystickPins_t * pins);
     def init(self, pins: JoystickPins_t):
+        """Initialisiert den Joystick mit den angegebenen GPIO-Pins."""
         self.__pins = pins
 
-        # BCM Pinmodus verwenden
-        GPIO.setmode(GPIO.BCM)
-
-        # TODO C++ Quellcode:
-        # pinMode(this->pins.left, INPUT_PULLUP);
-        # pinMode(this->pins.up, INPUT_PULLUP);
-        # pinMode(this->pins.right, INPUT_PULLUP);
-        # pinMode(this->pins.down, INPUT_PULLUP);
-        # pinMode(this->pins.buttonTop, INPUT_PULLUP);
-        # pinMode(this->pins.buttonBody, INPUT_PULLUP);
-
+        # Pins als Eingänge mit Pull-Up-Widerstand konfigurieren
         GPIO.setup(self.__pins.left, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.__pins.up, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.__pins.right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.__pins.down, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.__pins.buttonTop, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(self.__pins.buttonBody, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        pass
 
     def isLeft(self) -> bool:
-        if GPIO.input(self.__pins.left) == GPIO.LOW:
-            return True
-        
-        return False
+        return GPIO.input(self.__pins.left) == GPIO.LOW
+
     def isUp(self) -> bool:
-        if GPIO.input(self.__pins.up) == GPIO.LOW:
-            return True
-        
-        return False
+        return GPIO.input(self.__pins.up) == GPIO.LOW
+
     def isRight(self) -> bool:
-        if GPIO.input(self.__pins.right) == GPIO.LOW:
-            return True
-        
-        return False
+        return GPIO.input(self.__pins.right) == GPIO.LOW
+
     def isDown(self) -> bool:
-        if GPIO.input(self.__pins.down) == GPIO.LOW:
-            return True
-        
-        return False
+        return GPIO.input(self.__pins.down) == GPIO.LOW
+
     def isButtonTop(self) -> bool:
-        if GPIO.input(self.__pins.buttonTop) == GPIO.LOW:
-            return True
-        
-        return False
+        return GPIO.input(self.__pins.buttonTop) == GPIO.LOW
+
     def isButtonBody(self) -> bool:
-        if GPIO.input(self.__pins.buttonBody) == GPIO.LOW:
-            return True
-        
-        return False
+        return GPIO.input(self.__pins.buttonBody) == GPIO.LOW
 
     def process(self):
-        # C++ Quellcode:
-        # uint8_t actualSwitch;
-        # for (actualSwitch = 0; actualSwitch < JOYSTICK_SWITCHES_COUNT; actualSwitch++) 
-        # {
-        # 	this->checkEdge(actualSwitch);
-        # }
-        for actualSwitch in range(0, JOYSTICK_SWITCHES_COUNT):
-            self.checkEdge(actualSwitch)
-        pass
+        """Aktualisiert den Status aller Joystick-Schalter."""
+        for switch_id in range(JOYSTICK_SWITCHES_COUNT):
+            self.checkEdge(switch_id)
 
-    def getSwitchStatus(self, switchId: int) -> bool:
-        if switchId == JOYSTICK_SWITCH_LEFT:
-            return self.isLeft()
-        elif switchId == JOYSTICK_SWITCH_RIGHT:
-            return self.isRight()
-        elif switchId == JOYSTICK_SWITCH_UP:
-            return self.isUp()
-        elif switchId == JOYSTICK_SWITCH_DOWN:
-            return self.isDown()
-        elif switchId == JOYSTICK_SWITCH_BUTTON_TOP:
-            return self.isButtonTop()
-        elif switchId == JOYSTICK_SWITCH_BUTTON_BODY:
-            return self.isButtonBody()
-        else:
-            return False
-    def checkEdge(self, edge: int):
-        status: int = self.getControlStatus(edge)
+    def getSwitchStatus(self, switch_id: int) -> bool:
+        """Gibt den Zustand eines bestimmten Joystick-Schalters zurück."""
+        switch_methods = {
+            JOYSTICK_SWITCH_LEFT: self.isLeft,
+            JOYSTICK_SWITCH_UP: self.isUp,
+            JOYSTICK_SWITCH_RIGHT: self.isRight,
+            JOYSTICK_SWITCH_DOWN: self.isDown,
+            JOYSTICK_SWITCH_BUTTON_TOP: self.isButtonTop,
+            JOYSTICK_SWITCH_BUTTON_BODY: self.isButtonBody,
+        }
+        return switch_methods.get(switch_id, lambda: False)()
 
-        if self.getSwitchStatus(edge):
-            if status == JOYSTICK_STATUS_NOT_PRESSED:
-                self.setControlStatus(edge, JOYSTICK_STATUS_PRESSED)
-            elif status == JOYSTICK_STATUS_PRESSED:
-                self.setControlStatus(edge, JOYSTICK_STATUS_HOLD)
-        else:
-            self.setControlStatus(edge, JOYSTICK_STATUS_NOT_PRESSED)
-        pass
+    def checkEdge(self, switch_id: int):
+        """Prüft auf Kantenwechsel (Edge Detection) für einen Schalter."""
+        current_status = self.getSwitchStatus(switch_id)
+        previous_status = self.getControlStatus(switch_id)
 
-    def getControlStatus(self, switchId: int) -> int:
-        if switchId == JOYSTICK_SWITCH_LEFT:
-            return self.__edges.left
-        elif switchId == JOYSTICK_SWITCH_RIGHT:
-            return self.__edges.right
-        elif switchId == JOYSTICK_SWITCH_UP:
-            return self.__edges.up
-        elif switchId == JOYSTICK_SWITCH_DOWN:
-            return self.__edges.down
-        elif switchId == JOYSTICK_SWITCH_BUTTON_TOP:
-            return self.__edges.buttonTop
-        elif switchId == JOYSTICK_SWITCH_BUTTON_BODY:
-            return self.__edges.buttonBody
-        else:
-            return JOYSTICK_STATUS_NOT_PRESSED
-    def setControlStatus(self, switchId: int, status: int):
-        if switchId == JOYSTICK_SWITCH_LEFT:
+        if current_status:  # Schalter ist gedrückt
+            if previous_status == JOYSTICK_STATUS_NOT_PRESSED:
+                self.setControlStatus(switch_id, JOYSTICK_STATUS_PRESSED)
+            elif previous_status == JOYSTICK_STATUS_PRESSED:
+                self.setControlStatus(switch_id, JOYSTICK_STATUS_HOLD)
+        else:  # Schalter ist nicht gedrückt
+            self.setControlStatus(switch_id, JOYSTICK_STATUS_NOT_PRESSED)
+
+    def getControlStatus(self, switch_id: int) -> int:
+        """Gibt den aktuellen Steuerstatus eines Schalters zurück."""
+        status_mapping = {
+            JOYSTICK_SWITCH_LEFT: self.__edges.left,
+            JOYSTICK_SWITCH_UP: self.__edges.up,
+            JOYSTICK_SWITCH_RIGHT: self.__edges.right,
+            JOYSTICK_SWITCH_DOWN: self.__edges.down,
+            JOYSTICK_SWITCH_BUTTON_TOP: self.__edges.buttonTop,
+            JOYSTICK_SWITCH_BUTTON_BODY: self.__edges.buttonBody,
+        }
+        return status_mapping.get(switch_id, JOYSTICK_STATUS_NOT_PRESSED)
+
+    def setControlStatus(self, switch_id: int, status: int):
+        """Setzt den Steuerstatus eines Schalters."""
+        if switch_id == JOYSTICK_SWITCH_LEFT:
             self.__edges.left = status
-        elif switchId == JOYSTICK_SWITCH_RIGHT:
-            self.__edges.right = status
-        elif switchId == JOYSTICK_SWITCH_UP:
+        elif switch_id == JOYSTICK_SWITCH_UP:
             self.__edges.up = status
-        elif switchId == JOYSTICK_SWITCH_DOWN:
+        elif switch_id == JOYSTICK_SWITCH_RIGHT:
+            self.__edges.right = status
+        elif switch_id == JOYSTICK_SWITCH_DOWN:
             self.__edges.down = status
-        elif switchId == JOYSTICK_SWITCH_BUTTON_TOP:
+        elif switch_id == JOYSTICK_SWITCH_BUTTON_TOP:
             self.__edges.buttonTop = status
-        elif switchId == JOYSTICK_SWITCH_BUTTON_BODY:
+        elif switch_id == JOYSTICK_SWITCH_BUTTON_BODY:
             self.__edges.buttonBody = status
-        pass

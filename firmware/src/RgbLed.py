@@ -1,109 +1,104 @@
-from Microcontroller import *
+import RPi.GPIO as GPIO
+from Microcontroller import RGB_R_PIN, RGB_G_PIN, RGB_B_PIN
 
-# TODO Eventuell wird diese Datei garnicht mehr benötigt
-
-# TODO Im original ein Struct
 class Color_t:
-    def __init__(self, red: int, green: int, blue: int) -> None:
+    def __init__(self, red: int, green: int, blue: int):
         self.red = red
         self.green = green
         self.blue = blue
 
-
+# Vordefinierte Farben
 ColorBlack = Color_t(0, 0, 0)
-ColorRed = Color_t(3, 0, 0)
-ColorYellow = Color_t(3, 3, 0)
-ColorOrange = Color_t(3, 1, 0)
-ColorGreen = Color_t(0, 3, 0)
-ColorBlue = Color_t(0, 0, 3)
-ColorPurple = Color_t(3, 0, 3)
-ColorPink = Color_t(3, 0, 1)
-
-RGB_LED_DELAY_MASK = 0x03
-
-# TODO Im original ein Struct
-# TODO Einzige Variable dieses Typs im Originalcode wird nie verwendet
-# class RGBCycle_t:
-#     def __init__(self, color: Color_t, delay: int) -> None:
-#         self.color = color
-#         self.delay = delay
-
+ColorRed = Color_t(255, 0, 0)
+ColorYellow = Color_t(255, 255, 0)
+ColorOrange = Color_t(255, 165, 0)
+ColorGreen = Color_t(0, 255, 0)
+ColorBlue = Color_t(0, 0, 255)
+ColorPurple = Color_t(128, 0, 128)
+ColorPink = Color_t(255, 192, 203)
 
 class RgbLed:
-    # Start the timer for PWM.
-    def __startTimer(self):
-        pass
-
-    # Stop the timer.
-    def __stopTimer(self):
-        pass
-
-    # Constructor for the LED module.
     def __init__(self):
-        # TODO Im C++ Code deklariert aber nie verwendet
-        # self.__LEDCycle: RGBCycle_t
+        """
+        Initialisiert die RGB-LED-Pins für PWM.
+        """
+        GPIO.setmode(GPIO.BCM)  # Verwende Broadcom-Pin-Nummerierung
+        GPIO.setup(RGB_R_PIN, GPIO.OUT)
+        GPIO.setup(RGB_G_PIN, GPIO.OUT)
+        GPIO.setup(RGB_B_PIN, GPIO.OUT)
 
-        self.__actualColor: Color_t = Color_t(0, 0, 0)
+        # PWM initialisieren
+        self.__pwm_red = GPIO.PWM(RGB_R_PIN, 100)  # 100 Hz Frequenz
+        self.__pwm_green = GPIO.PWM(RGB_G_PIN, 100)
+        self.__pwm_blue = GPIO.PWM(RGB_B_PIN, 100)
 
-        # TODO C++ Quellcode:
-        # analogWrite(RGB_R_PIN, 0);
-        # analogWrite(RGB_G_PIN, 0);
-        # analogWrite(RGB_B_PIN, 0);
+        # PWM starten mit 0% Duty Cycle (aus)
+        self.__pwm_red.start(0)
+        self.__pwm_green.start(0)
+        self.__pwm_blue.start(0)
 
-        # TODO Python, funktion analogWrite (noch) nicht importiert
-        # analogWrite(RGB_R_PIN, 0)
-        # analogWrite(RGB_G_PIN, 0)
-        # analogWrite(RGB_B_PIN, 0)
+        self.__actualColor = ColorBlack
+        print("RGB LED initialized.")
 
-    # Sets the color for the RGB led.
-    # TODO Python unterstützt kein overloading, vorher setLEDColor(...)
+    def __setPWM(self, pwm, value):
+        """
+        Setzt den PWM-Wert für eine LED-Farbe.
+        :param pwm: PWM-Objekt
+        :param value: Helligkeit (0-255)
+        """
+        duty_cycle = max(0, min(100, (value / 255) * 100))  # Umrechnung auf 0-100%
+        pwm.ChangeDutyCycle(duty_cycle)
+
     def setLEDColorRGB(self, red: int, green: int, blue: int):
-        self.__actualColor.red = 255 - red
-        self.__actualColor.green = 255 - green
-        self.__actualColor.blue = 255 - blue
+        """
+        Setzt die RGB-Farbe der LED.
+        :param red: Rot-Wert (0-255)
+        :param green: Grün-Wert (0-255)
+        :param blue: Blau-Wert (0-255)
+        """
+        self.__actualColor = Color_t(red, green, blue)
 
-        # TODO C++ Quellcode:
-        # analogWrite(RGB_R_PIN, this->actualColor.red);
-        # analogWrite(RGB_G_PIN, this->actualColor.green);
-        # analogWrite(RGB_B_PIN, this->actualColor.blue);
+        # PWM-Werte aktualisieren
+        self.__setPWM(self.__pwm_red, red)
+        self.__setPWM(self.__pwm_green, green)
+        self.__setPWM(self.__pwm_blue, blue)
 
-        # TODO Python, Funktion analogWrite (noch) nicht importiert
-        # analogWrite(RGB_R_PIN, self.__actualColor.red);
-        # analogWrite(RGB_G_PIN, self.__actualColor.green);
-        # analogWrite(RGB_B_PIN, self.__actualColor.blue);
+        print(f"Set LED color to RGB({red}, {green}, {blue})")
 
-    # Sets the color for the RGB led.
     def setLEDColor(self, color: Color_t):
+        """
+        Setzt die Farbe der LED basierend auf einem Color_t-Objekt.
+        :param color: Color_t-Objekt mit RGB-Werten
+        """
         self.setLEDColorRGB(color.red, color.green, color.blue)
 
-    # Gets the current color for the RGB led.
-    def getLEDColor(self, color: Color_t):
-        color.red = 255 - self.__actualColor.red
-        color.green = 255 - self.__actualColor.green
-        color.blue = 255 - self.__actualColor.blue
+    def getLEDColor(self) -> Color_t:
+        """
+        Gibt die aktuelle Farbe der LED zurück.
+        :return: Color_t-Objekt mit der aktuellen Farbe
+        """
+        return self.__actualColor
 
-    # Turns on the RGB led.
     def setLEDStatusOn(self):
-        # TODO C++ Quellcode:
-        # digitalWrite(RGB_R_PIN, this->actualColor.red);
-        # digitalWrite(RGB_G_PIN, this->actualColor.green);
-        # digitalWrite(RGB_B_PIN, this->actualColor.blue);
+        """
+        Schaltet die LED mit der aktuellen Farbe ein.
+        """
+        self.setLEDColor(self.__actualColor)
+        print("LED turned on.")
 
-        # TODO Python, Funktion digitalWrite (noch) nicht importiert
-        # digitalWrite(RGB_R_PIN, self.__actualColor.red)
-        # digitalWrite(RGB_G_PIN, self.__actualColor.green)
-        # digitalWrite(RGB_B_PIN, self.__actualColor.blue)
-        pass
-
-    # Turns off the RGB led.
     def setLEDStatusOff(self):
-        # TODO C++ Quellcode:
-        # digitalWrite(RGB_R_PIN, 0);
-        # digitalWrite(RGB_G_PIN, 0);
-        # digitalWrite(RGB_B_PIN, 0);
+        """
+        Schaltet die LED aus.
+        """
+        self.setLEDColorRGB(0, 0, 0)
+        print("LED turned off.")
 
-        # TODO Python, Funktion digitalWrite (noch) nicht importiert
-        # digitalWrite(RGB_R_PIN, 0)
-        # digitalWrite(RGB_G_PIN, 0)
-        # digitalWrite(RGB_B_PIN, 0)
-        pass
+    def cleanup(self):
+        """
+        Bereinigt die GPIO-Konfiguration.
+        """
+        self.__pwm_red.stop()
+        self.__pwm_green.stop()
+        self.__pwm_blue.stop()
+        GPIO.cleanup()
+        print("GPIO cleaned up.")

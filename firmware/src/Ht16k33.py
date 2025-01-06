@@ -1,68 +1,65 @@
 from time import sleep
+from smbus2 import SMBus
+
+# pip install smbus2
 
 HT16K33_DISPLAY_SIZE = 16
-HT16k33_CMD_BRIGHTNESS = 0xE0
+HT16K33_CMD_BRIGHTNESS = 0xE0
+HT16K33_CMD_OSCILLATOR = 0x21
+HT16K33_CMD_DISPLAY_ON = 0x81
+HT16K33_CMD_DISPLAY_OFF = 0x80
 
 class Ht16k33:
-    def __init__(self) -> None:
-        self._i2CAddres: int = 0
-        self._dataBuffer: int = [0 for _ in range(HT16K33_DISPLAY_SIZE)]
-    
-    def init(self, i2CAddress: int):
-        self._i2CAddres = i2CAddress
-        # TODO C++ Quellcode:
-        # delay(100);
+    def __init__(self, i2c_bus: int = 1):
+        """Initialisiert den HT16K33-Treiber."""
+        self._i2c_address = 0
+        self._dataBuffer = [0x00] * HT16K33_DISPLAY_SIZE
+        self._i2c_bus = SMBus(i2c_bus)  # Standard I2C-Bus ist 1 auf Raspberry Pi
+
+    def init(self, i2c_address: int):
+        """Initialisiert den HT16K33 mit der angegebenen I2C-Adresse."""
+        self._i2c_address = i2c_address
+
+        # HT16K33 einschalten (Oszillator aktivieren)
+        self._write_command(HT16K33_CMD_OSCILLATOR)
+
+        # Display einschalten, keine Blinken (Blink = 0)
+        self._write_command(HT16K33_CMD_DISPLAY_ON)
+
+        # Standard-Helligkeit einstellen
+        self.setBrightness(15)
+
         sleep(0.1)
 
-        # TODO C++ Quellcode:
-        # Wire.begin();
-        # Serial.println("init");
-            
-        # Wire.beginTransmission(this->i2CAddres);
-        # Wire.write(0x21);  // turn on oscillator
-        # Wire.endTransmission();
-
-        # Wire.beginTransmission(this->i2CAddres);
-        # Wire.write(0x81);  // turn on display
-        # Wire.endTransmission();
-
-        # Wire.beginTransmission(this->i2CAddres);
-        # Wire.write(0xEF);  // turn on display
-        # Wire.endTransmission();
-
-        # Wire.beginTransmission(this->i2CAddres);
-        # Wire.write(0xA0);  // turn on display
-        # Wire.endTransmission();
-        # Aus Wire.h, genaue Funktionalität unklar
-        
-        self.setBrightness(15)
-        pass
     def setBrightness(self, brightness: int):
-        if (brightness > 15):
-            brightness = 15
-        
-        # TODO C++ Quellcode:
-        # Wire.beginTransmission(this->i2CAddres);
-        # Wire.write(HT16K33_CMD_BRIGHTNESS | brightness);
-        # Wire.endTransmission();
-        # Aus Wire.h, genaue Funktionalität unklar
-        pass
+        """Setzt die Helligkeit (0-15)."""
+        brightness = max(0, min(brightness, 15))  # Begrenzen auf 0-15
+        self._write_command(HT16K33_CMD_BRIGHTNESS | brightness)
+
     def refresh(self):
-        index: int
+        """Aktualisiert das Display mit den Daten im Puffer."""
+        try:
+            # Daten an die I2C-Adresse senden
+            self._i2c_bus.write_i2c_block_data(self._i2c_address, 0x00, self._dataBuffer)
+        except IOError as e:
+            print(f"I2C Error while refreshing: {e}")
 
-        # TODO C++ Quellcode:
-        # Wire.beginTransmission(this->i2CAddres);
-        # Wire.write(0x00); // start at address $00
+    def setBuffer(self, index: int, value: int):
+        """Setzt einen Wert im Datenpuffer."""
+        if 0 <= index < HT16K33_DISPLAY_SIZE:
+            self._dataBuffer[index] = value
 
-        # TODO Zeilen im C++ Quellcode auskommentiert
-        # Index wird somit nicht verwendet, diese Funktion
-        # wird deshalb vermutlich nirgendwo benutzt
-        # //   for (index=0; index<HT16K33_DISPLAY_SIZE; index++)
-        # //      for (index=0; index<1; index++)
-        # {
-        #   Wire.write(&this->dataBuffer[index],16);
-        # }
+    def clearBuffer(self):
+        """Löscht den Datenpuffer."""
+        self._dataBuffer = [0x00] * HT16K33_DISPLAY_SIZE
 
-        # Wire.endTransmission();
-        # Aus Wire.h, genaue Funktionalität unklar
-        pass
+    def _write_command(self, command: int):
+        """Sendet einen Befehl an den HT16K33."""
+        try:
+            self._i2c_bus.write_byte(self._i2c_address, command)
+        except IOError as e:
+            print(f"I2C Error while writing command: {e}")
+
+    def close(self):
+        """Schließt die Verbindung zum I2C-Bus."""
+        self._i2c_bus.close()

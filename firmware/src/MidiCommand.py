@@ -1,17 +1,10 @@
 from enum import Enum
-from ctypes import Structure, Union, c_ubyte, c_uint
+from dataclasses import dataclass, field
+from typing import List, Optional, Union
 
-# TODO C++ Code:
-# enum CommandType {
-#     NoteOn,
-#     NoteOff,
-#     ProgramChange,
-#     ControllerChange,
-#     EndOfTrack,
-#     SetTempo,
-# };
 
 class CommandType(Enum):
+    """Typen von MIDI-Befehlen."""
     NoteOn = 0
     NoteOff = 1
     ProgramChange = 2
@@ -20,88 +13,61 @@ class CommandType(Enum):
     SetTempo = 5
 
 
+@dataclass
 class EmptyEvent:
+    """Leeres Ereignis (z. B. End of Track)."""
     pass
 
-# # TODO C++ Code:
-# # struct EmptyEvent {};
-# class EmptyEvent(Structure):
-#     _fields_ = []
 
-
+@dataclass
 class NoteEvent:
-    def __init__(self):
-        self.channel: int = 0
-        self.note: int = 0
-        self.velocity: int = 0
-
-# class NoteEvent(Structure):
-#     # TODO In C++ sind alle Variablen unsigned chars, c_uchar existiert nicht
-#     _fields_ = [("channel", c_ubyte), ("note", c_ubyte), ("velocity", c_ubyte)]
+    """Daten für Note On/Off."""
+    channel: int = 0
+    note: int = 0
+    velocity: int = 0
 
 
+@dataclass
 class ProgramChangeEvent:
-    def __init__(self):
-        self.channel: int = 0
-        self.programNumber: int = 0
-
-# class ProgramChangeEvent(Structure):
-#     # TODO In C++ sind alle Variablen unsigned chars, c_uchar existiert nicht
-#     _fields_ = [("channel", c_ubyte), ("programNumber", c_ubyte)]
+    """Daten für Program Change."""
+    channel: int = 0
+    programNumber: int = 0
 
 
+@dataclass
 class ControllerChangeEvent:
-    def __init__(self):
-        self.channel: int = 0
-        self.controller: int = 0
-        self.value: int = 0
-
-# class ControllerChangeEvent(Structure):
-#     # TODO In C++ sind alle Variablen unsigned chars, c_uchar existiert nicht
-#     _fields = [("channel", c_ubyte), ("controller", c_ubyte), ("value", c_ubyte)]
+    """Daten für Controller Change."""
+    channel: int = 0
+    controller: int = 0
+    value: int = 0
 
 
+@dataclass
 class SetTempoEvent:
-    def __init__(self):
-        self.tempo = [0 for _ in range(3)]
-
-# class SetTempoEvent(Structure):
-#     _fields_ = [("tempo", char_array)]
+    """Daten für Set Tempo."""
+    tempo: List[int] = field(default_factory=lambda: [0, 0, 0])
 
 
-# Externe Union Definition für Command
-class DataUnion(Union):
-    _fields_ = [("noteOn", NoteEvent),
-                ("noteOff", NoteEvent),
-                ("programChange", ProgramChangeEvent),
-                ("controllerChange", ControllerChangeEvent),
-                ("endOfTrack", EmptyEvent),
-                ("setTempo", SetTempoEvent)]
-
-
-# TODO Experimental
+@dataclass
 class Command:
-    def __init__(self):
-        self.deltaTime: int = 0
-        self.type: CommandType = None
-        self.data: DataUnion = DataUnion()
+    """Eine MIDI-Kommandostruktur."""
+    deltaTime: int = 0
+    type: CommandType = CommandType.NoteOn
+    data: Union[NoteEvent, ProgramChangeEvent, ControllerChangeEvent, EmptyEvent, SetTempoEvent, None] = None
 
-# class Command(Structure):
-#     _fields_ = [("deltaTime", c_uint),
-#                 ("type", CommandType),
-#                 ("data", DataUnion)]
+def create_note_on_command(channel: int, note: int, velocity: int, deltaTime: int = 0) -> Command:
+    """Erzeugt einen Note-On-Befehl."""
+    return Command(
+        deltaTime=deltaTime,
+        type=CommandType.NoteOn,
+        data=NoteEvent(channel=channel, note=note, velocity=velocity)
+    )
 
-# C++ Source:
-# struct Command {
-#     unsigned deltaTime;
 
-#     CommandType type;
-#     union {
-#         NoteEvent noteOn;
-#         NoteEvent noteOff;
-#         ProgramChangeEvent programChange;
-#         ControllerChangeEvent controllerChange;
-#         EmptyEvent endOfTrack;
-#         SetTempoEvent setTempo;
-#     } data;
-# };
+def create_program_change_command(channel: int, programNumber: int, deltaTime: int = 0) -> Command:
+    """Erzeugt einen Program-Change-Befehl."""
+    return Command(
+        deltaTime=deltaTime,
+        type=CommandType.ProgramChange,
+        data=ProgramChangeEvent(channel=channel, programNumber=programNumber)
+    )

@@ -1,60 +1,43 @@
+# GPIO-Pin-Zuweisungen für den Raspberry Pi
 
-# TODO Datei wahrscheinlich nicht benötigt
+# Coin-Acceptor
+PIN_COIN_ACCEPTOR_COUNTER = 17  # Beispiel-Pin, anpassen falls nötig
 
-PIN_COIN_ACCEPTOR_COUNTER = 0
+# Start-Button
+PIN_START_BUTTON = 27  # Beispiel-Pin, anpassen falls nötig
 
-PIN_START_BUTTON = 40
+# Joystick-Pins (links)
+PIN_JOYSTICK_LEFT_LEFT = 5
+PIN_JOYSTICK_LEFT_UP = 6
+PIN_JOYSTICK_LEFT_RIGHT = 13
+PIN_JOYSTICK_LEFT_DOWN = 19
+PIN_JOYSTICK_LEFT_BUTTON_TOP = 26
+PIN_JOYSTICK_LEFT_BUTTON_BODY = 21
 
-PIN_JOYSTICK_LEFT_LEFT = 51
-PIN_JOYSTICK_LEFT_UP = 52
-PIN_JOYSTICK_LEFT_RIGHT = 53
-PIN_JOYSTICK_LEFT_DOWN = 50
-PIN_JOYSTICK_LEFT_BUTTON_TOP = 49
-PIN_JOYSTICK_LEFT_BUTTON_BODY = 48
+# Joystick-Pins (rechts)
+PIN_JOYSTICK_RIGHT_LEFT = 20
+PIN_JOYSTICK_RIGHT_UP = 16
+PIN_JOYSTICK_RIGHT_DOWN = 12
+PIN_JOYSTICK_RIGHT_RIGHT = 25
+PIN_JOYSTICK_RIGHT_BUTTON_TOP = 24
+PIN_JOYSTICK_RIGHT_BUTTON_BODY = 23
 
-PIN_JOYSTICK_RIGHT_LEFT = 44
-PIN_JOYSTICK_RIGHT_UP = 45
-PIN_JOYSTICK_RIGHT_DOWN = 47
-PIN_JOYSTICK_RIGHT_RIGHT = 46
-PIN_JOYSTICK_RIGHT_BUTTON_TOP = 43
-PIN_JOYSTICK_RIGHT_BUTTON_BODY = 42
+# Sieben-Segment-Anzeigen (optional, falls nicht benötigt, entfernen)
+PIN_SIEBEN_SEGMENT_ANZEIGE_1 = 22
+PIN_SIEBEN_SEGMENT_ANZEIGE_2 = 10
 
-PIN_SIEBEN_SEGMENT_ANZEIGE_1 = 21
-PIN_SIEBEN_SEGMENT_ANZEIGE_2 = 20
+# Lautsprecher (optional, falls nicht benötigt, entfernen)
+PIN_LAUTSPRECHER = 18
 
-#/*
-# PIN_LED_0 = 33
-# PIN_LED_1 = 32
-# PIN_LED_2 = 31*/
-
-PIN_LAUTSPRECHER = 30
-
-PIN_DISPLAY_CLK = 11
+# Pins für die LED-Matrix (werden von Adafruit-Bibliothek verwendet)
+PIN_DISPLAY_CLK = 11  # Wird direkt von der Bibliothek gesteuert
 PIN_DISPLAY_OE = 9
-PIN_DISPLAY_B2 = 29
-PIN_DISPLAY_G2 = 28
-PIN_DISPLAY_R2 = 27
-PIN_DISPLAY_B1 = 26
-PIN_DISPLAY_G1 = 25
-PIN_DISPLAY_R1 = 24
+PIN_DISPLAY_LAT = 8
 
-# TODO Rausfinden, was A0 - A3 ist
-# TODO Bis dahin, einfach definieren:
-A0 = 0
-A1 = 1
-A2 = 2
-A3 = 3
-# TODO
-
-PIN_DISPLAY_LAT = A3
-PIN_DISPLAY_C = A2
-PIN_DISPLAY_B = A1
-PIN_DISPLAY_A = A0
-
+# RGB-LED-Pins (optional, falls nicht benötigt, entfernen)
 RGB_R_PIN = 2
 RGB_G_PIN = 3
 RGB_B_PIN = 4
 
-# namespace Microcontroller {
-#       void init();
-# };
+# Hinweis: Analoge Pins des Arduino wie A0-A3 sind auf dem Raspberry Pi nicht verfügbar.
+# Diese wurden entfernt oder durch digitale GPIO-Pins ersetzt.

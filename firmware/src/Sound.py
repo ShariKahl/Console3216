@@ -1,203 +1,166 @@
-
 from Midi import *
 
+# Kanäle
 CHANNEL_1 = 0
 CHANNEL_2 = 1
 CHANNEL_3 = 2
 CHANNEL_DRUM = 9
 
+# Konstanten
 SOUNDEFFECTS_LENGTH = 3
-
 CONTROL_CHANNEL_VOLUME = 7
 CONTROL_CHANNEL_BALANCE = 10
-
 CONTROL_CHANNEL_VELOCITY = 64
 
+
 class Sound:
-    # Kommentare aus dem C++ Quellcode herauskopiert:
-
-    # faengt bei 1 an zu zaehlen, 0 ist reserviert, siehe alarmSound[]
     __steps: int = 1
-    # 3 Elemente: Einen fuer jeden Voice-Channel, alarmSound[] = 0 -> dauerhafter Ton, bzw. kein Endzeitpunkt
-    __alarmSound = [0 for _ in range(3)]
-    # 3 Elemente: 3 gleichzeitig abspielbare SoundEffects auf der 3x-Polyfonen Drum-Map
-    __alarmSoundEffect = [0 for _ in range(3)]
-    # Hier werden die Sounds passend zu den Voice-Channels gespeichert, d.h. sound[0] wird auf CHANNEL_1 gespielt
-    __sound = [0 for _ in range(3)]
-    # Hier werden die SoundEffects auf der Drum-Map gespeichert
-    # WICHTIG: Diese sind sortiert, zuletzt hinzugefuegte SoundEffects haben immer den kleineren Index.
-    # BSP: [Neuester][Mittlerer][Aeltester]
-    __soundEffects = [0 for _ in range(SOUNDEFFECTS_LENGTH)]
+    __alarmSound = [0] * 3
+    __alarmSoundEffect = [0] * SOUNDEFFECTS_LENGTH
+    __sound = [0] * 3
+    __soundEffects = [0] * SOUNDEFFECTS_LENGTH
 
-    # Private Funktion, um die zeitliche Hierarchie im SoundEffect-Array
-    # zu erhalten und um einen SoundEffect nach dem Stoppen aus dem Array zu loeschen
     @classmethod
     def __sortSoundEffects(cls, idx: int):
+        """
+        Sortiert die Soundeffekte im Array nach der zeitlichen Hierarchie und entfernt das angegebene Element.
+        :param idx: Index des zu entfernenden Elements
+        """
         for i in range(idx, SOUNDEFFECTS_LENGTH - 1):
             cls.__soundEffects[i] = cls.__soundEffects[i + 1]
-            cls.__alarmSoundEffect[i] = cls.__soundEffects[i + 1]
-        
-        # letzte Stelle im Array "freiraeumen"
-        cls.__soundEffects[SOUNDEFFECTS_LENGTH - 1] = 0
-        cls.__alarmSoundEffect[SOUNDEFFECTS_LENGTH - 1] = 0
-        pass
+            cls.__alarmSoundEffect[i] = cls.__alarmSoundEffect[i + 1]
+
+        # Letzte Position freimachen
+        cls.__soundEffects[-1] = 0
+        cls.__alarmSoundEffect[-1] = 0
+        print(f"Sound effect at index {idx} removed and sorted.")
 
     @classmethod
     def init(cls):
+        """
+        Initialisiert die MIDI-Schnittstelle und die Sound-Datenstrukturen.
+        """
         Midi.init()
         cls.__steps = 1
-        pass
+        cls.__alarmSound = [0] * 3
+        cls.__alarmSoundEffect = [0] * SOUNDEFFECTS_LENGTH
+        cls.__sound = [0] * 3
+        cls.__soundEffects = [0] * SOUNDEFFECTS_LENGTH
+        print("Sound system initialized.")
 
     @classmethod
     def reset(cls):
-        pass
+        """
+        Setzt alle Sounds und Soundeffekte zurück.
+        """
+        cls.stopSounds()
+        cls.stopSoundEffects()
+        cls.__steps = 1
+        print("Sound system reset.")
 
     @classmethod
     def setPreset(cls, index: int):
         if index > 127:
+            print("Invalid preset index.")
             return
-        
-        Midi.programChange(CHANNEL_1, index)
-        Midi.programChange(CHANNEL_2, index)
-        Midi.programChange(CHANNEL_3, index)
-        pass
 
-    # TODO In C++ setPreset() überladen
+        for channel in [CHANNEL_1, CHANNEL_2, CHANNEL_3]:
+            Midi.programChange(channel, index)
+        print(f"Preset {index} set on all channels.")
+
     @classmethod
     def setPresetCh(cls, index: int, channel: int):
         if index > 127:
+            print("Invalid preset index.")
             return
-        
+
         Midi.programChange(channel, index)
-        pass
+        print(f"Preset {index} set on channel {channel}.")
 
     @classmethod
     def setVolume(cls, volume: int):
-        cls.setVolumeCh(volume, CHANNEL_1)
-        cls.setVolumeCh(volume, CHANNEL_2)
-        cls.setVolumeCh(volume, CHANNEL_3)
-        cls.setVolumeCh(volume, CHANNEL_DRUM)
-        pass
+        for channel in [CHANNEL_1, CHANNEL_2, CHANNEL_3, CHANNEL_DRUM]:
+            cls.setVolumeCh(volume, channel)
+        print(f"Volume set to {volume} on all channels.")
 
-    # TODO In C++ setVolume() überladen
     @classmethod
     def setVolumeCh(cls, volume: int, channel: int):
         Midi.controlChange(channel, CONTROL_CHANNEL_VOLUME, volume)
-        pass
-
-    @classmethod
-    def setPanorama(cls, panorama: int):
-        cls.setPanoramaCh(panorama, CHANNEL_1)
-        cls.setPanoramaCh(panorama, CHANNEL_2)
-        cls.setPanoramaCh(panorama, CHANNEL_3)
-        pass
-
-    # TODO In C++ setPanorama() überladen
-    @classmethod
-    def setPanoramaCh(cls, panorama: int, channel: int):
-        if (channel > 2):
-            return
-        
-        Midi.controlChange(channel, CONTROL_CHANNEL_BALANCE, panorama)
-        pass
+        print(f"Volume set to {volume} on channel {channel}.")
 
     @classmethod
     def playSound(cls, note: int, channel: int):
         Midi.noteOff(channel, cls.__sound[channel])
         Midi.noteOn(channel, note, CONTROL_CHANNEL_VELOCITY)
         cls.__sound[channel] = note
-        pass
+        print(f"Playing note {note} on channel {channel}.")
 
-    # TODO In C++ playSound() überladen
     @classmethod
     def playSoundDura(cls, note: int, channel: int, duration: int):
-        Midi.noteOff(channel, cls.__sound[channel])
         cls.playSound(note, channel)
         cls.__alarmSound[channel] = cls.__steps + duration
-        cls.__sound[channel] = note
-        pass
+        print(f"Playing note {note} on channel {channel} for {duration} steps.")
 
     @classmethod
     def stopSound(cls, note: int, channel: int):
         Midi.noteOff(channel, note)
         cls.__alarmSound[channel] = 0
-        pass
+        print(f"Stopped note {note} on channel {channel}.")
 
     @classmethod
     def stopSounds(cls):
-        for i in range(CHANNEL_1, CHANNEL_3 + 1):
-            cls.stopSound(cls.__sound[i], i)
-        pass
+        for channel in range(CHANNEL_1, CHANNEL_3 + 1):
+            cls.stopSound(cls.__sound[channel], channel)
+        print("All sounds stopped.")
 
     @classmethod
     def playSoundEffect(cls, soundEffect: int):
         cls.playSoundEffectDura(soundEffect, 0)
-        pass
 
     @classmethod
-    
-    # TODO In C++ playSoundEffect() überladen
     def playSoundEffectDura(cls, soundEffect: int, duration: int):
-        # Duplikate filtern
-        for i in range(0, SOUNDEFFECTS_LENGTH):
-            if cls.__soundEffects[i] == soundEffect:
-                return
-        Midi.noteOn(CHANNEL_DRUM, soundEffect, CONTROL_CHANNEL_VELOCITY)
+        if soundEffect in cls.__soundEffects:
+            print(f"Sound effect {soundEffect} already playing.")
+            return
 
-        # Verschiebung der Sound Effekte und deren Alarmzeiten
+        Midi.noteOn(CHANNEL_DRUM, soundEffect, CONTROL_CHANNEL_VELOCITY)
         for i in range(SOUNDEFFECTS_LENGTH - 1, 0, -1):
             cls.__soundEffects[i] = cls.__soundEffects[i - 1]
             cls.__alarmSoundEffect[i] = cls.__alarmSoundEffect[i - 1]
-        
+
         cls.__soundEffects[0] = soundEffect
         cls.__alarmSoundEffect[0] = duration
-        pass
+        print(f"Playing sound effect {soundEffect} for {duration} steps.")
 
     @classmethod
     def stopSoundEffect(cls, soundEffect: int):
-        idx = 255
-
-        # Index herausfinden
-        for i in range(0, SOUNDEFFECTS_LENGTH):
-            if cls.__soundEffects[i] == soundEffect:
-                idx = i
-                break
-        
-        if idx == 255:
+        if soundEffect not in cls.__soundEffects:
+            print(f"Sound effect {soundEffect} not found.")
             return
-        
-        Midi.noteOff(CHANNEL_DRUM, soundEffect)
 
-        # Dies sorgt dafür, dass ein SoundEffect geloescht werden kann
+        idx = cls.__soundEffects.index(soundEffect)
+        Midi.noteOff(CHANNEL_DRUM, soundEffect)
         cls.__sortSoundEffects(idx)
-        pass
+        print(f"Sound effect {soundEffect} stopped.")
 
     @classmethod
     def stopSoundEffects(cls):
-        for i in range(0, SOUNDEFFECTS_LENGTH):
-            if cls.__soundEffects[i] != 0:
-                Midi.noteOff(CHANNEL_DRUM, cls.__soundEffects[i])
-                cls.__soundEffects[i] = 0
-                cls.__alarmSoundEffect[i] = 0
-        pass
+        for effect in cls.__soundEffects:
+            if effect != 0:
+                Midi.noteOff(CHANNEL_DRUM, effect)
+        cls.__soundEffects = [0] * SOUNDEFFECTS_LENGTH
+        cls.__alarmSoundEffect = [0] * SOUNDEFFECTS_LENGTH
+        print("All sound effects stopped.")
 
     @classmethod
     def step(cls):
         for i in range(CHANNEL_1, CHANNEL_3 + 1):
             if cls.__alarmSound[i] == cls.__steps:
-                cls.__alarmSound[i] = 0
                 cls.stopSound(cls.__sound[i], i)
-                # TODO C++ Quellcode:
-                # Serial.println("Sound gestoppt");
-        
-        for i in range(0, SOUNDEFFECTS_LENGTH):
+
+        for i in range(SOUNDEFFECTS_LENGTH):
             if cls.__alarmSoundEffect[i] == cls.__steps:
-                cls.__alarmSoundEffect[i] = 0
                 cls.stopSoundEffect(cls.__soundEffects[i])
-                # TODO C++ Quellcode:
-                # Serial.println("Soundeffekt gestoppt");
 
         cls.__steps += 1
-        # TODO C++ Quellcode:
-        # Serial.println("steps++");
-        pass
+        print(f"Advanced to step {cls.__steps}.")

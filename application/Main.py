@@ -1,109 +1,96 @@
 # Application.ino
 
-# #include "Arduino.h"
-
-# #include "Microcontroller.h"
+# Import von Modulen
 import Microcontroller
-# #include "display.h"
 import Display
-# #include "CoinDetection.h"
 import CoinDetection
-# #include "Joystick.h"
 import Joystick
-
-# #include <Wire.h>
-# #include <console.h>
-# #include <Adafruit_GFX.h>
-# #include <gfxfont.h>
-
-import Game
-
-# TODO
-# #include <console.h>
 import Console
-
-# #include "inc/pong_game.h"
 import Pong_game
-
-# #include "inc/inv_game.h"
 import Inv_game
-
-# #include "inc/curve_game.h"
 import Curve_Game
-
-# #include "inc/sw_game.h"
 import SW_Game
-
-# #include "inc/TetrisGame.h"
 import TetrisGame
 
-# #include "Midi.h"
-# #include "MidiInterrupt.h"
-
+# Globale Variablen
 totalCoinValue: int = 0
 currentCoinValue: int = 0
 
-# TODO
+# Instanzen der globalen Objekte
 console: Console.Console = None
-
-# TODO C++: Display* display;
 display: Display.Display = None
 
-# TODO Arduino specific code, now handled by main()
-def setup():
-    pass
-
-# TODO Arduino specific code, now handled by main()
-def loop():
-    pass
-
-# TODO No definition in C++ source
-# TODO Coindetection from firmware, not same folder
 def ca_coinDetected(coinType: CoinDetection.coin):
-    pass
+    """
+    Wird aufgerufen, wenn ein Münzeinwurf erkannt wurde.
+    """
+    global totalCoinValue, currentCoinValue
+    coinValueMapping = {
+        CoinDetection.coin.cent5: 5,
+        CoinDetection.coin.cent10: 10,
+        CoinDetection.coin.cent20: 20
+    }
+    if coinType in coinValueMapping:
+        totalCoinValue += coinValueMapping[coinType]
+        currentCoinValue += coinValueMapping[coinType]
+        print(f"Münze erkannt: {coinValueMapping[coinType]} Cent. Total: {totalCoinValue} Cent.")
 
-# TODO No definition in C++ source
 def checkCoinValues():
-    pass
+    """
+    Prüft die aktuellen Münzwerte und aktualisiert den Zustand.
+    """
+    global currentCoinValue
+    if currentCoinValue > 0:
+        print(f"Spiel verfügbar! Münzwert: {currentCoinValue}")
+        # Beispielaktion: Spiel starten, falls genug Münzen vorhanden.
+        currentCoinValue -= 1  # Verbrauch einer Münze für ein Spiel
+    else:
+        print("Bitte Münzen einwerfen.")
 
-# TODO No definition in C++ source
 def checkScoreAndPlaySound():
-    pass
+    """
+    Prüft den aktuellen Punktestand und spielt gegebenenfalls einen Sound ab.
+    """
+    # Beispiel für eine Soundaktion basierend auf Punktestand
+    if totalCoinValue % 10 == 0:  # Beispielbedingung
+        print("Special Sound gespielt!")
+        # Sound.playSoundEffect(...) (nicht implementiert)
 
 def main():
-    # TODO BEGIN setup()
+    """
+    Hauptprogramm der Anwendung.
+    """
+    global console, display
 
-    # Serial.begin(115200)
-    # Midi.init()
-    # MIDI.setupInterrupt()
+    # Setup-Phase
+    print("Initialisierung...")
+    Microcontroller.init()
+    Display.init()
+    CoinDetection.init()
+    
+    console = Console.Console()
     console.init()
 
-    # TODO Pong
-    game: Game.Game = Pong_game.Pong(console.getJoystick(0), console.getJoystick(1))
-    console.addGame(game)
+    # Initialisierung der Spiele
+    print("Spiele werden geladen...")
+    games = [
+        Pong_game.Pong(console.getJoystick(0), console.getJoystick(1)),
+        Inv_game.Invaders(console.getJoystick(0), console.getJoystick(1)),
+        Curve_Game.Curve(console.getJoystick(0), console.getJoystick(1)),
+        SW_Game.Space_Wars(console.getJoystick(0), console.getJoystick(1)),
+        TetrisGame.TetrisGame(console.getJoystick(0), console.getJoystick(1))
+    ]
 
-    # TODO Invaders
-    game = Inv_game.Invaders(console.getJoystick(0), console.getJoystick(1))
-    console.addGame(game)
+    for game in games:
+        console.addGame(game)
 
-    # TODO Curve
-    game = Curve_Game.Curve(console.getJoystick(0), console.getJoystick(1))
-    console.addGame(game)
-
-    # TODO Space_Wars
-    game = SW_Game.Space_Wars(console.getJoystick(0), console.getJoystick(1))
-    console.addGame(game)
-
-    # TODO Tetris
-    game = TetrisGame.TetrisGame(console.getJoystick(0), console.getJoystick(1))
-    console.addGame(game)
-    # TODO END setup()
-
-    # TODO BEGIN loop()
+    # Haupt-Loop
+    print("Hauptschleife gestartet...")
     while True:
         console.process()
-        # MIDI.interruptLoop()
-    # TODO END loop()
+        checkCoinValues()
+        checkScoreAndPlaySound()
+        # Hier könnten weitere periodische Aktionen eingefügt werden.
 
 if __name__ == "__main__":
     main()

@@ -1,31 +1,14 @@
-
-# TODO Nicht sicher, ob es auch ohne die C Union geht
+import serial
 from ctypes import Union, c_int16, c_int8, Structure
 
-
 class halfValue(Structure):
-        _fields_ = [("secondByte", c_int8),
-                    ("firstByte", c_int8)]
+    _fields_ = [("secondByte", c_int8), ("firstByte", c_int8)]
 
-# TODO Eventuell kommen wir auch ohne aus
-# C++ Code:
-# union byteConverter {
-#     uint16_t value;
-#     struct {
-#         int8_t secondByte;
-#         int8_t firstByte;
-#     };
-# };
-
-# TODO Muss getestet werden
 class byteConverter(Union):
-    _anonymous_ = ("h",)
-    _fields_ = [("value", c_int16),
-                ("h", halfValue)]
-
+    _fields_ = [("value", c_int16), ("h", halfValue)]
 
 class MIDI_Control_Commands:
-    __SERIAL_BAUD = 74880
+    __SERIAL_BAUD = 31250  # Standard-Baudrate für MIDI-Kommunikation
     __COMMAND_CODE_PLAY_TRACK = 0x01
     __COMMAND_CODE_CHANGE_TEMPO = 0x02
     __COMMAND_CODE_PAUSE_TRACK = 0x03
@@ -33,41 +16,69 @@ class MIDI_Control_Commands:
     __COMMAND_CODE_RESUME_TRACK = 0x05
     __COMMAND_CODE_RESTART_TRACK = 0x06
 
-    def __init__(self) -> None:
-        pass
+    __serial_connection = None  # Serielle Verbindung
 
-    # Hilfsmethode
+    @classmethod
+    def setupMidi(cls, port: str = "/dev/serial0"):
+        """
+        Initialisiert die MIDI-Kommunikation.
+        :param port: Serieller Port, standardmäßig "/dev/serial0" für UART.
+        """
+        try:
+            cls.__serial_connection = serial.Serial(
+                port=port,
+                baudrate=cls.__SERIAL_BAUD,
+                bytesize=serial.EIGHTBITS,
+                stopbits=serial.STOPBITS_ONE,
+                parity=serial.PARITY_NONE
+            )
+            print(f"MIDI serial connection initialized on {port} at {cls.__SERIAL_BAUD} baud.")
+        except serial.SerialException as e:
+            print(f"Failed to initialize MIDI serial connection: {e}")
+
     @classmethod
     def __serialWriteData(cls, command: int, trackId: int, tempo: int = -1):
-        byteConv: byteConverter = byteConverter()
+        """
+        Sendet MIDI-Daten über die serielle Verbindung.
+        :param command: Befehlscode
+        :param trackId: ID des Tracks
+        :param tempo: (optional) Tempo
+        """
+        if cls.__serial_connection is None or not cls.__serial_connection.is_open:
+            print("Error: Serial connection is not open.")
+            return -1
+
+        byteConv = byteConverter()
         byteConv.value = trackId
 
-        firstByteTrackId = byteConv.firstByte
-        secondByteTrackId = byteConv.secondByte
+        firstByteTrackId = byteConv.h.firstByte
+        secondByteTrackId = byteConv.h.secondByte
 
         if tempo != -1:
             byteConv.value = tempo
-            firstByteTempo = byteConv.firstByte
-            secondByteTempo = byteConv.secondByte
+            firstByteTempo = byteConv.h.firstByte
+            secondByteTempo = byteConv.h.secondByte
 
-            data = [
+            data = bytearray([
                 command,
-                firstByteTrackId,
-                secondByteTrackId,
-                firstByteTempo,
-                secondByteTempo
-            ]
+                firstByteTrackId & 0xFF,
+                secondByteTrackId & 0xFF,
+                firstByteTempo & 0xFF,
+                secondByteTempo & 0xFF
+            ])
         else:
-            data = [
+            data = bytearray([
                 command,
-                firstByteTrackId,
-                secondByteTrackId
-            ]
-        
-        # TODO C++ Quellcode:
-        # TODO pyserial
-        # MIDI_SERIAL.write(data, 5);
-        # MIDI_SERIAL ist Serial aus Arduino Code
+                firstByteTrackId & 0xFF,
+                secondByteTrackId & 0xFF
+            ])
+
+        try:
+            cls.__serial_connection.write(data)
+            print(f"Sent MIDI data: {data}")
+        except serial.SerialException as e:
+            print(f"Failed to send MIDI data: {e}")
+            return -1
 
         return 0
 
@@ -96,7 +107,8 @@ class MIDI_Control_Commands:
         return cls.__serialWriteData(cls.__COMMAND_CODE_RESTART_TRACK, trackId)
 
     @classmethod
-    def setupMidi(cls):
-        # TODO C++ Quellcode:
-        # MIDI_SERIAL.begin(MIDI_Control_Commands::SERIAL_BAUD);
-        pass
+    def closeConnection(cls):
+        """Schließt die serielle Verbindung."""
+        if cls.__serial_connection and cls.__serial_connection.is_open:
+            cls.__serial_connection.close()
+            print("MIDI serial connection closed.")

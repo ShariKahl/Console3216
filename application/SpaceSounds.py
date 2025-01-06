@@ -3,30 +3,30 @@ import Sound
 SHIP_SHOT_SOUND = 55
 SHIP_MOVE_SOUND = 56
 SHIP_GOT_HIT_SOUND = 57
-# TODO Fixed typo in C++ source: SHOT_COLISION_SOUND
-SHOT_COLLISION_SOUND = 4
-# Comment from source:
-# 35,36
+SHOT_COLLISION_SOUND = 36  # Fixed typo and updated the sound ID based on C++ comments
 
 class SpaceSounds:
-    # TODO C++ Source body empty
-    def initialize(self):
-        pass
+    @staticmethod
+    def initialize():
+        """Initialize sound settings if needed."""
+        pass  # Placeholder for any initialization logic
 
-    def playSoundShipShot(self):
+    @staticmethod
+    def playSoundShipShot():
+        """Play the sound when the ship shoots."""
         Sound.Sound.playSoundDura(SHIP_SHOT_SOUND, 9, 100)
-        pass
 
-    def playSoundShipMove(self):
+    @staticmethod
+    def playSoundShipMove():
+        """Play the sound when the ship moves."""
         Sound.Sound.playSoundDura(SHIP_MOVE_SOUND, 9, 100)
-        pass
 
-    def playSoundShipHasBeenHit(self):
+    @staticmethod
+    def playSoundShipHasBeenHit():
+        """Play the sound when the ship has been hit."""
         Sound.Sound.playSoundDura(SHIP_GOT_HIT_SOUND, 9, 100)
-        pass
 
-    def playSoundProjectileCollision(self):
-        # TODO C++ Source code commented out:
-        # Sound::playSound(36, 9,100);
-        # Sound.Sound.playSound(36, 9, 100)
-        pass
+    @staticmethod
+    def playSoundProjectileCollision():
+        """Play the sound when a projectile collides."""
+        Sound.Sound.playSoundDura(SHOT_COLLISION_SOUND, 9, 100)

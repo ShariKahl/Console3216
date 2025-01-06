@@ -1,8 +1,3 @@
-# #include "Arduino.h"
-# #include "Joystick.h"
-import Joystick
-
-
 class SW_Projectile:
     def __init__(self):
         # x-Koordinate
@@ -11,76 +6,69 @@ class SW_Projectile:
         # y-Koordinate
         self.__yCoordinate: int = 0
 
-        # Richtungsflag
+        # Richtungsflag: True = links, False = rechts
         self.__directionLeft: bool = False
 
-        # Valid flag
+        # Validitätsflag: Zeigt an, ob das Projektil aktiv ist
         self.__valid: bool = False
 
-    """
-     * Diese Methode gibt das Richtungsflag eines Projektils zurück.
-     * Bei true ist die Flugrichtung eines Projektils links und bei
-     * falls ist sie rechts.
-     * @return bool directionLeft
-    """
     def getDirection(self) -> bool:
+        """
+        Gibt die Flugrichtung des Projektils zurück.
+        True = links, False = rechts.
+        """
         return self.__directionLeft
 
+    def setDirection(self, directionLeft: bool):
+        """
+        Setzt die Flugrichtung des Projektils.
+        True = links, False = rechts.
+        """
+        self.__directionLeft = directionLeft
+
     def getValid(self) -> bool:
+        """
+        Gibt zurück, ob das Projektil aktiv ist.
+        """
         return self.__valid
 
     def setValid(self, valid: bool):
+        """
+        Setzt das Validitätsflag für das Projektil.
+        True = aktiv, False = inaktiv.
+        """
         self.__valid = valid
-        pass
 
-    """
-    * Diese Methode setzt das Richtungsflag eines Projektils.
-    * Bei true ist die Flugrichtung eines Projektils links und bei
-    * falls ist sie rechts.
-    """
-    def setDirection(self, directionLeft: bool):
-        self.__directionLeft = directionLeft
-        pass
-
-    """
-     * Diese Methode gibt die x-Koordinate eines Projektils zurück.
-     * @return int xCoordinate
-    """
     def getXCoordinate(self) -> int:
+        """
+        Gibt die x-Koordinate des Projektils zurück.
+        """
         return self.__xCoordinate
 
-    """
-     * Diese Methode gibt die y-Koordinate eines Projektils zurück.
-     * @return int yCoordinate
-    """
+    def setXCoordinate(self, xCoordinate: int):
+        """
+        Setzt die x-Koordinate des Projektils.
+        """
+        self.__xCoordinate = xCoordinate
+
     def getYCoordinate(self) -> int:
+        """
+        Gibt die y-Koordinate des Projektils zurück.
+        """
         return self.__yCoordinate
 
-    """
-     * Diese Methode setzt die x-Koordinate eines Projektils auf die
-     * übergebene x-Koordinate
-     * @param int xCoordinate
-    """
-    def setXCoordinate(self, xCoordinate: int):
-        self.__xCoordinate = xCoordinate
-        pass
-
-    """
-     * Diese Methode setzt die y-Koordinate eines Projektils auf die
-     * übergebene y-Koordinate
-     * @param int yCoordinate
-    """
     def setYCoordinate(self, yCoordinate: int):
+        """
+        Setzt die y-Koordinate des Projektils.
+        """
         self.__yCoordinate = yCoordinate
-        pass
 
-    """
-     * Diese Methode wird aufgerufen, um ein Projektil um ein Pixel
-     * nach links oder rechts zu bewegen.
-    """
     def move(self):
-        if self.getDirection():
+        """
+        Bewegt das Projektil um ein Pixel nach links oder rechts,
+        abhängig von der gesetzten Flugrichtung.
+        """
+        if self.getDirection():  # Richtung links
             self.setXCoordinate(self.getXCoordinate() - 1)
-        else:
+        else:  # Richtung rechts
             self.setXCoordinate(self.getXCoordinate() + 1)
-        pass

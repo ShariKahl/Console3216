@@ -11,98 +11,92 @@ class TetrisLogicStatus(Enum):
     ENDSCREEN = 1
     ENDGAME = 2
 
-
 class TetrisLogic:
     def __init__(self):
         self.__status: TetrisLogicStatus = None
 
-        # TODO C++: TetrisPlayer* playerLeft;
+        # Spielerinitialisierung
         self.playerLeft: TetrisPlayer.TetrisPlayer = None
-        # TODO C++: TetrisPlayer* playerRight;
         self.playerRight: TetrisPlayer.TetrisPlayer = None
 
+        # Spielinitialisierung
         self.initializeGame()
 
     def __handleStatus(self, player: TetrisPlayer.TetrisPlayer):
-        # TODO C++ Source was Switch/case
+        # Statusbehandlung der Spieler
         if player.getStatus() == TetrisPlayer.TetrisPlayerStatus.PLAYING:
             pass
         elif player.getStatus() == TetrisPlayer.TetrisPlayerStatus.LOST:
             self.__status = TetrisLogicStatus.ENDSCREEN
-        pass
 
     def __drawBorders(self):
+        # Zeichnet die Spielgrenzen
         for y in range(16):
             Display.Display.drawPixel(10, y, Display.Display.getColorFrom333(2, 0, 0))
             Display.Display.drawPixel(21, y, Display.Display.getColorFrom333(2, 0, 0))
-        pass
 
     def update(self, delta: int):
+        # Hauptspielupdate
         Display.Display.clearDisplay()
 
-        # TODO C++ Source was Switch/case
+        # Spielstatus und Spielerupdates
         if self.__status == TetrisLogicStatus.UPDATING:
             self.__handleStatus(self.playerLeft)
             self.__handleStatus(self.playerRight)
 
-            # Serial.println("UPDATING")
+            # Spieler aktualisieren und anzeigen
             self.playerLeft.update(delta)
             self.playerRight.update(delta)
             self.playerLeft.displayPlayerPoints(True)
             self.playerRight.displayPlayerPoints(False)
 
+            # Grenzen zeichnen
             self.__drawBorders()
+
+            # Nächste Tetrominos und Spieler zeichnen
             self.playerLeft.drawNextTetroms(12, 2)
             self.playerRight.drawNextTetroms(17, 2)
 
+            # Spieler selbst zeichnen
             self.playerLeft.draw()
             self.playerRight.draw()
+
         elif self.__status == TetrisLogicStatus.ENDSCREEN:
-            # Serial.println("ENDSCREEN")
             self.__drawBorders()
             self.playerLeft.draw()
             self.playerRight.draw()
+
         elif self.__status == TetrisLogicStatus.ENDGAME:
-            # TODO C++ Source lines were commented out
-            # Serial.println("ENDGAME");
-            # self.resetGame();
+            # Bei Endgame nichts weiter tun
             pass
 
         Display.Display.refresh()
-        pass
 
     def startButtonPressed(self):
-        # TODO C++ Source was Switch/case
+        # Behandelt den Startknopf
         if self.__status == TetrisLogicStatus.UPDATING:
-            # Serial.println("Button to EndScreen")
             self.__status = TetrisLogicStatus.ENDSCREEN
         elif self.__status == TetrisLogicStatus.ENDSCREEN:
-            # Serial.println("Button to EndGame")
             self.__status = TetrisLogicStatus.ENDGAME
         elif self.__status == TetrisLogicStatus.ENDGAME:
             pass
-        pass
 
     def isGameEnd(self) -> bool:
-        if self.__status == TetrisLogicStatus.ENDGAME:
-            return True
-        
-        return False
+        # Überprüft, ob das Spiel zu Ende ist
+        return self.__status == TetrisLogicStatus.ENDGAME
 
     def isEndScreen(self) -> bool:
-        if self.__status == TetrisLogicStatus.ENDSCREEN:
-            return True
-        
-        return False
+        # Überprüft, ob das Endbildschirm angezeigt wird
+        return self.__status == TetrisLogicStatus.ENDSCREEN
 
     def initializeGame(self):
+        # Initialisiert das Spiel
         NumericDisplay.NumericDisplay.test()
         self.playerLeft = TetrisPlayer.TetrisPlayer(0, 0)
         self.playerRight = TetrisPlayer.TetrisPlayer(22, 0)
         self.__status = TetrisLogicStatus.UPDATING
-        pass
 
     def resetGame(self):
+        # Setzt das Spiel zurück
         self.playerLeft.reset()
         self.playerRight.reset()
-        pass
